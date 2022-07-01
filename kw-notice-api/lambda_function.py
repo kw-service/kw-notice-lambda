@@ -50,10 +50,10 @@ def lambda_handler(event, context):
                 'id' : row[0],
                 'title' : row[1],
                 'tag' : row[2],
-                'posted_date' : str(row[3]),
-                'modified_date' : str(row[4]),
-                'department' : row[5],
-                'url' : row[6],
+                'posted_date' : str(row[4]),
+                'modified_date' : str(row[5]),
+                'department' : row[6],
+                'url' : row[3],
                 'type' : row[7],
                 'crawled_time' : str(row[8])
             })
