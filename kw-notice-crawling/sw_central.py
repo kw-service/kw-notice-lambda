@@ -1,7 +1,7 @@
 import requests
 from datetime import datetime
 from bs4 import BeautifulSoup
-from fcm import pushAndroidNotification
+from fcm import pushNotification
 
 def crawl_sw_central(conn, cursor):
     BASE_URL = 'https://npsw.kw.ac.kr/site/sub.php?Tid=27&Ctnum=28&Ctid=HM28&page=1&sg=&st=&search_yes=&Cate='
@@ -29,6 +29,6 @@ def crawl_sw_central(conn, cursor):
         query = "INSERT INTO SW_CENTRAL(title, posted_date, url, type, crawled_time) VALUES ('{}','{}','{}','{}','{}')".format(title, posted_date, url, type, crawled_time)
         cursor.execute(query)
 
-        pushAndroidNotification('SW중심대학사업단에 새 공지사항이 올라왔어요!', title, url, SW_CENTRAL_NEW_TOPIC)
+        pushNotification('SW중심대학사업단에 새 공지사항이 올라왔어요!', title, url, SW_CENTRAL_NEW_TOPIC)
     
     conn.commit()

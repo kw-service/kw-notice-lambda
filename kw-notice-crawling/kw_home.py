@@ -3,7 +3,7 @@ import requests
 
 from datetime import datetime
 from bs4 import BeautifulSoup
-from fcm import pushAndroidNotification
+from fcm import pushNotification
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36'
@@ -45,11 +45,11 @@ def crawl_kw_home(conn, cursor):
             if str(modified_date) != str(old_modified_date):
                 query = "UPDATE KW_HOME SET modified_date = '{}', crawled_time = '{}' WHERE url = '{}'".format(modified_date, crawled_time, url)
                 
-                pushAndroidNotification('광운대학교에 수정된 공지사항이 있어요!', title, url, KW_HOME_EDIT_TOPIC)
+                pushNotification('광운대학교에 수정된 공지사항이 있어요!', title, url, KW_HOME_EDIT_TOPIC)
         else:
             query = "INSERT INTO KW_HOME(title, tag, posted_date, modified_date, department, url, type, crawled_time) VALUES ('{}','{}','{}','{}','{}','{}','{}','{}')".format(title, tag, posted_date, modified_date, department, url, type, crawled_time)
             
-            pushAndroidNotification('광운대학교에 새 공지사항이 올라왔어요!', title, url, KW_HOME_NEW_TOPIC)
+            pushNotification('광운대학교에 새 공지사항이 올라왔어요!', title, url, KW_HOME_NEW_TOPIC)
         
         if query != '': cursor.execute(query)
     

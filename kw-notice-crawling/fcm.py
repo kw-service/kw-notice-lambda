@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import messaging
 
-def pushAndroidNotification(title, body, url, topic):
+def pushNotification(title, body, url, topic):
     credential_file_path = './FCMServiceAccountKey.json'
     cred = credentials.Certificate(credential_file_path)
 
