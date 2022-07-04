@@ -16,6 +16,9 @@ def crawl_kw_home(conn, cursor):
     KW_HOME_NEW_TOPIC = 'kw-home-new'
     KW_HOME_EDIT_TOPIC = 'kw-home-edit'
     
+    NEW_MESSAGE = '광운대학교에 새 공지사항이 올라왔어요!'
+    EDIT_MESSAGE = '광운대학교에 수정된 공지사항이 있어요!'
+
     r = requests.get(BASE_URL, headers=headers)
     soup = BeautifulSoup(r.content, 'html.parser')
 
@@ -25,7 +28,8 @@ def crawl_kw_home(conn, cursor):
     query = "SELECT url FROM KW_HOME"
     cursor.execute(query)
     crawled_url_list = set(row[0] for row in cursor.fetchall())
-    pushed_url_list = []
+    
+    fcm_queue = dict()
 
     for notice in notice_list:
         title = notice.find("div", {"class":"board-text"}).find("a").text.replace('신규게시글','').replace('Attachment','').replace("'",'"').strip()
@@ -38,8 +42,6 @@ def crawl_kw_home(conn, cursor):
         type = 'KW_HOME'
         crawled_time = (datetime.now() + timedelta(hours=9)).strftime('%Y-%m-%d %H:%M:%S')
 
-        if url in pushed_url_list: continue
-
         query = ''
         if url in crawled_url_list:
             cursor.execute("SELECT modified_date FROM KW_HOME WHERE url = '{}'".format(url))
@@ -47,14 +49,16 @@ def crawl_kw_home(conn, cursor):
             if str(modified_date) != str(old_modified_date):
                 query = "UPDATE KW_HOME SET modified_date = '{}', crawled_time = '{}' WHERE url = '{}'".format(modified_date, crawled_time, url)
                 
-                pushNotification('광운대학교에 수정된 공지사항이 있어요!', title, url, KW_HOME_EDIT_TOPIC)
-                pushed_url_list.append(url)
+                fcm_queue[url] = [EDIT_MESSAGE, title, url, KW_HOME_EDIT_TOPIC]
         else:
             query = "INSERT INTO KW_HOME(title, tag, posted_date, modified_date, department, url, type, crawled_time) VALUES ('{}','{}','{}','{}','{}','{}','{}','{}')".format(title, tag, posted_date, modified_date, department, url, type, crawled_time)
             
-            pushNotification('광운대학교에 새 공지사항이 올라왔어요!', title, url, KW_HOME_NEW_TOPIC)
-            pushed_url_list.append(url)
+            fcm_queue[url] = [NEW_MESSAGE, title, url, KW_HOME_NEW_TOPIC]
         
         if query != '': cursor.execute(query)
     
     conn.commit()
+
+    for k in fcm_queue.keys():
+        value = fcm_queue.get(k)
+        pushNotification(value[0], value[1], value[2], value[3])

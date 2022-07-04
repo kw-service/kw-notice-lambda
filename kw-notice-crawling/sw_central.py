@@ -9,6 +9,8 @@ def crawl_sw_central(conn, cursor):
     
     SW_CENTRAL_NEW_TOPIC = 'sw-central-new'
     
+    NEW_MESSAGE = 'SW중심대학사업단에 새 공지사항이 올라왔어요!'
+
     page = requests.get(BASE_URL)
     soup = BeautifulSoup(page.content, 'html.parser')
     
@@ -17,7 +19,8 @@ def crawl_sw_central(conn, cursor):
     query = "SELECT url FROM SW_CENTRAL"
     cursor.execute(query)
     crawled_url_list = set(row[0] for row in cursor.fetchall())
-    pushed_url_list = []
+
+    fcm_queue = dict()
 
     for notice in notice_list:
         title = notice.select_one('td.left > a').get_text().strip()
@@ -26,11 +29,14 @@ def crawl_sw_central(conn, cursor):
         type = 'SW_CENTRAL'
         crawled_time = (datetime.now() + timedelta(hours=9)).strftime('%Y-%m-%d %H:%M:%S')
         
-        if url in crawled_url_list or url in pushed_url_list: continue
+        if url in crawled_url_list: continue
         query = "INSERT INTO SW_CENTRAL(title, posted_date, url, type, crawled_time) VALUES ('{}','{}','{}','{}','{}')".format(title, posted_date, url, type, crawled_time)
         cursor.execute(query)
 
-        pushNotification('SW중심대학사업단에 새 공지사항이 올라왔어요!', title, url, SW_CENTRAL_NEW_TOPIC)
-        pushed_url_list.append(url)
-    
+        fcm_queue[url] = [NEW_MESSAGE, title, url, SW_CENTRAL_NEW_TOPIC]
+
     conn.commit()
+
+    for k in fcm_queue.keys():
+        value = fcm_queue.get(k)
+        pushNotification(value[0], value[1], value[2], value[3])
