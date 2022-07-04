@@ -1,7 +1,7 @@
 import pymysql
 import requests
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from fcm import pushNotification
 
@@ -36,7 +36,7 @@ def crawl_kw_home(conn, cursor):
         modified_date = info[2].split()[1]
         department = info[3]
         type = 'KW_HOME'
-        crawled_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        crawled_time = (datetime.now() + timedelta(hours=9)).strftime('%Y-%m-%d %H:%M:%S')
 
         query = ''
         if url in crawled_url_list:
