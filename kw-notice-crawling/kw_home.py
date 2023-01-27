@@ -4,6 +4,7 @@ import requests
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
 from fcm import pushNotification
+import time
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36'
@@ -30,7 +31,9 @@ def crawl_kw_home(conn, cursor):
     crawled_url_list = set(row[0] for row in cursor.fetchall())
     
     fcm_queue = dict()
-
+    
+    print('# Crawled')
+    
     for notice in notice_list:
         title = notice.find("div", {"class":"board-text"}).find("a").text.replace('신규게시글','').replace('Attachment','').replace("'",'"').strip()
         tag = notice.find("div", {"class":"board-text"}).find("a").find("strong", {"class":"category"}).text.replace('[','').replace(']','').strip()
@@ -48,17 +51,27 @@ def crawl_kw_home(conn, cursor):
             old_modified_date = cursor.fetchone()[0]
             if str(modified_date) != str(old_modified_date):
                 query = "UPDATE KW_HOME SET modified_date = '{}', crawled_time = '{}' WHERE url = '{}'".format(modified_date, crawled_time, url)
-                
+                print('update -> ' + title)
                 fcm_queue[url] = [EDIT_MESSAGE, title, url, KW_HOME_EDIT_TOPIC]
         else:
             query = "INSERT INTO KW_HOME(title, tag, posted_date, modified_date, department, url, type, crawled_time) VALUES ('{}','{}','{}','{}','{}','{}','{}','{}')".format(title, tag, posted_date, modified_date, department, url, type, crawled_time)
-            
+            print('insert -> ' + title)
             fcm_queue[url] = [NEW_MESSAGE, title, url, KW_HOME_NEW_TOPIC]
         
         if query != '': cursor.execute(query)
     
     conn.commit()
-
+    
+    print('# Push notification')
+    
     for k in fcm_queue.keys():
         value = fcm_queue.get(k)
         pushNotification(value[0], value[1], value[2], value[3])
+        print('pushed -> ' + value[1])
+        time.sleep(1)
+    
+    queries = ["set SQL_SAFE_UPDATES = 0", "DELETE FROM KW_HOME WHERE crawled_time < date_sub(now(), interval 3 month)", "set SQL_SAFE_UPDATES = 1"]
+    for query in queries:
+        cursor.execute(query)
+    
+    conn.commit()
